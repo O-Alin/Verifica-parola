@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='UTF-8' />
+  <title>Verificare Parola</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0,  minimum-scale=1.0">
+  <link rel="stylesheet" href="./essential_bootstrap.css">
+
+  <style>
+    html,
+    body {
+      background: rgb(2, 0, 36);
+      background: rgb(118, 115, 164);
+      background: rgb(145, 162, 255);
+      background: linear-gradient(180deg, rgba(145, 162, 255, 1) 0%, rgba(47, 1, 139, 1) 100%, rgba(171, 0, 0, 1) 100%, rgba(0, 26, 43, 1) 100%, rgba(36, 87, 195, 1) 100%);
+      height: 100%;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+
+    .source {
+      position: absolute;
+      margin: 15px;
+      margin-left: 0px;
+      bottom: 0;
+    }
+
+    b {
+      color: red;
+    }
+
+
+    div {
+      margin-top: 10px;
+    }
+
+    .message {
+      position: absolute;
+      bottom: 0;
+      right: 15px;
+      color: rgb(194, 193, 191);
+    }
+
+    form {
+      position: absolute;
+      left: 50%;
+      top: 40%;
+      transform: translate(-50%, -50%);
+    }
+
+    h1 {
+      text-align: center;
+      padding-top: 100px;
+      color: #ffab20;
+      border: 10px;
+      border-color: black;
+      font-size: 35px;
+      ;
+    }
+
+    @media only screen and (max-width : 800px) {
+
+      .form-inline{
+        padding-top: 200px;
+      }
+
+      img{
+        width: 400px;
+      }
+
+      .form-inline .btn{
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
+        margin-top: 30px;
+      }
+
+    }
+  </style>
+</head>
+
+<body>
+  <!-- <img src="Poli.png" alt="Italian Trulli"> -->
+  <img src="Poli2.png" alt="Italian Trulli">
+  <h1>Verifica daca parola a fost sparta</h1>
+  <div class="bodyDiv">
+    <form class="form-inline" onsubmit="javascript:runCheck();return false;">
+      <input id="input" class="form-control" type="text" placeholder="Parola...">
+      <button class="btn btn-success" type="submit">Verifica</button>
+    </form>
+    <div>
+      <p id="output"></p>
+    </div>
+
+
+
+  </div>
+
+  <p class="message">Verificarea se face prin transmiterea primelor 5 caractere din functia hash a parolei introduse
+    catre platforma <a href="https://haveibeenpwned.com/API/v2#SearchingPwnedPasswordsByRange">haveibeenpwned.com</a>
+  </p>
+
+  <script>
+
+    let first = "";
+    let last = "";
+    let hash = "";
+
+    function hexString(buffer) {
+        const byteArray = new Uint8Array(buffer);
+        const hexCodes = [...byteArray].map(value => {
+        const hexCode = value.toString(16);
+        const paddedHexCode = hexCode.padStart(2, '0');
+        return paddedHexCode.toUpperCase();
+      });
+        return hexCodes.join('');
+    }
+
+
+
+    //Functie ce converteste textul in hash (sha-1) folosing SubtleCrypto
+    async function digestMessage(message) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+       return window.crypto.subtle.digest('SHA-1', data);
+    }
+
+
+    async function runCheck() {
+
+      // asignarea variabilelor din dom dupa id
+      let output = document.getElementById("output");
+      let input = document.getElementById("input");
+
+
+
+      try {
+        // extragerea textului
+        let text = input.value;
+        input.value = "";
+
+
+        if (text === "") {
+          throw "Intorduceti o parola";
+        }
+
+       let digestValue = await digestMessage(text);
+        // transformarea in text
+        hash = hexString(digestValue);
+
+        // imparirea valorii hash in varibilele first si last
+        first = hash.substring(0, 5);
+        last = hash.substring(5);
+        let response = await fetch('https://api.pwnedpasswords.com/range/' + first);
+
+        // asignarea rezultatului in variablila responseText
+        let responseText = await response.text();
+
+        // imparirea raspunsului intr-o multime cu potentialele parole
+        let arr = responseText.split("\r\n");
+
+        // afisarea textului "Parola nu a fost gasita" in cazul in care nu este afisat nici un rezultat
+        document.getElementById("output")
+          .innerHTML = "Parola : " + text +
+          "<br>SHA1 Hash : <span id='hash'>" + hash +
+          "</span><br>Nu a fost gasita";
+
+        arr.forEach((s) => {
+
+          // impartirea ficarei linii afisate in valoarea hash si numarul de aparitii 
+          let a = s.split(":");
+
+          // a[0] este valoarea hash gasita
+          if (a[0] === last) {
+
+            // afirea rezultateului
+            document.getElementById("output")
+              .innerHTML = "Parola : " + text +
+              "<br>SHA1 Hash : <span id='hash'>" + hash +
+              "</span><br>A fost gasita de <b>" + a[1] + "</b> ori!";
+
+            return;
+          }
+
+        });
+      } catch (error) {
+
+          document.getElementById("output").innerHTML =
+          "<b>" + error + "</b>";
+      }
+
+      output.value = "";
+    }
+
+
+
+  </script>
+</body>
+
+</html>
